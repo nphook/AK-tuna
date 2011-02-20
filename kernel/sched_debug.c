@@ -169,6 +169,12 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
 	struct sched_entity *last;
 	unsigned long flags;
 
+#ifdef CONFIG_SCHED_AUTOGROUP
+	int enabled = ACCESS_ONCE(sysctl_sched_autogroup_enabled);
+
+	if (task_group_is_autogroup(cfs_rq->tg) && !enabled)
+		return;
+#endif
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	SEQ_printf(m, "\ncfs_rq[%d]:%s\n", cpu, task_group_path(cfs_rq->tg));
 #else
