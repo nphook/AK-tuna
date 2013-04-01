@@ -35,6 +35,8 @@
 #include <linux/switch.h>
 #include <linux/wakelock.h>
 #include <linux/fastchg.h>
+#include <linux/wakelock.h>
+
 #include <plat/usb.h>
 
 #include "mux.h"
