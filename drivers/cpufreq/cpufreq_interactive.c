@@ -40,6 +40,7 @@
 #endif
 
 static int active_count;
+static bool ktoonservative_is_activef = false;
 
 struct cpufreq_interactive_cpuinfo {
 	struct timer_list cpu_timer;
@@ -940,6 +941,13 @@ static ssize_t store_boost(struct kobject *kobj, struct attribute *attr,
 
 define_one_global_rw(boost);
 
+extern void boostpulse_relay(void);
+
+void ktoonservative_is_active(bool val)
+{
+	ktoonservative_is_activef = val;
+}
+
 static ssize_t store_boostpulse(struct kobject *kobj, struct attribute *attr,
 				const char *buf, size_t count)
 {
@@ -951,6 +959,9 @@ static ssize_t store_boostpulse(struct kobject *kobj, struct attribute *attr,
 		return ret;
 
 	boostpulse_endtime = ktime_to_us(ktime_get()) + boostpulse_duration_val;
+	if (ktoonservative_is_activef)
+		boostpulse_relay();
+
 	trace_cpufreq_interactive_boost("pulse");
 	cpufreq_interactive_boost();
 	return count;
