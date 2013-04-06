@@ -1,0 +1,95 @@
+[1mdiff --cc fs/nfs/nfs4proc.c[m
+[1mindex 3720caa,894e326..0000000[m
+[1m--- a/fs/nfs/nfs4proc.c[m
+[1m+++ b/fs/nfs/nfs4proc.c[m
+[36m@@@ -3566,41 -3563,61 +3566,52 @@@[m [mstatic ssize_t __nfs4_get_acl_uncached([m
+  		.rpc_argp = &args,[m
+  		.rpc_resp = &res,[m
+  	};[m
+[32m++<<<<<<< HEAD[m
+[32m +	struct page *localpage = NULL;[m
+[32m +	int ret;[m
+[32m++=======[m
+[32m+ 	int ret = -ENOMEM, npages, i;[m
+[32m+ 	size_t acl_len = 0;[m
+[32m+ [m
+[32m+ 	npages = (buflen + PAGE_SIZE - 1) >> PAGE_SHIFT;[m
+[32m+ 	/* As long as we're doing a round trip to the server anyway,[m
+[32m+ 	 * let's be prepared for a page of acl data. */[m
+[32m+ 	if (npages == 0)[m
+[32m+ 		npages = 1;[m
+[31m -[m
+[31m -	for (i = 0; i < npages; i++) {[m
+[31m -		pages[i] = alloc_page(GFP_KERNEL);[m
+[31m -		if (!pages[i])[m
+[31m -			goto out_free;[m
+[31m -	}[m
+[31m -	if (npages > 1) {[m
+[31m -		/* for decoding across pages */[m
+[31m -		res.acl_scratch = alloc_page(GFP_KERNEL);[m
+[31m -		if (!res.acl_scratch)[m
+[31m -			goto out_free;[m
+[32m++>>>>>>> 0a22699... NFS: nfs_getaclargs.acl_len is a size_t[m
+[32m +[m
+[32m +	if (buflen < PAGE_SIZE) {[m
+[32m +		/* As long as we're doing a round trip to the server anyway,[m
+[32m +		 * let's be prepared for a page of acl data. */[m
+[32m +		localpage = alloc_page(GFP_KERNEL);[m
+[32m +		resp_buf = page_address(localpage);[m
+[32m +		if (localpage == NULL)[m
+[32m +			return -ENOMEM;[m
+[32m +		args.acl_pages[0] = localpage;[m
+[32m +		args.acl_pgbase = 0;[m
+[32m +		args.acl_len = PAGE_SIZE;[m
+[32m +	} else {[m
+[32m +		resp_buf = buf;[m
+[32m +		buf_to_pages(buf, buflen, args.acl_pages, &args.acl_pgbase);[m
+  	}[m
+[31m -	args.acl_len = npages * PAGE_SIZE;[m
+[31m -	args.acl_pgbase = 0;[m
+[31m -	/* Let decode_getfacl know not to fail if the ACL data is larger than[m
+[31m -	 * the page we send as a guess */[m
+[31m -	if (buf == NULL)[m
+[31m -		res.acl_flags |= NFS4_ACL_LEN_REQUEST;[m
+[31m -	resp_buf = page_address(pages[0]);[m
+[31m -[m
+[31m -	dprintk("%s  buf %p buflen %ld npages %d args.acl_len %ld\n",[m
+[31m -		__func__, buf, buflen, npages, args.acl_len);[m
+[31m -	ret = nfs4_call_sync(NFS_SERVER(inode)->client, NFS_SERVER(inode),[m
+[31m -			     &msg, &args.seq_args, &res.seq_res, 0);[m
+[32m +	ret = nfs4_call_sync(NFS_SERVER(inode)->client, NFS_SERVER(inode), &msg, &args.seq_args, &res.seq_res, 0);[m
+  	if (ret)[m
+  		goto out_free;[m
+[31m -[m
+[31m -	acl_len = res.acl_len - res.acl_data_offset;[m
+[31m -	if (acl_len > args.acl_len)[m
+[31m -		nfs4_write_cached_acl(inode, NULL, acl_len);[m
+[32m +	if (res.acl_len > args.acl_len)[m
+[32m +		nfs4_write_cached_acl(inode, NULL, res.acl_len);[m
+  	else[m
+[31m -		nfs4_write_cached_acl(inode, resp_buf + res.acl_data_offset,[m
+[31m -				      acl_len);[m
+[32m +		nfs4_write_cached_acl(inode, resp_buf, res.acl_len);[m
+  	if (buf) {[m
+  		ret = -ERANGE;[m
+[31m -		if (acl_len > buflen)[m
+[32m +		if (res.acl_len > buflen)[m
+  			goto out_free;[m
+[31m -		_copy_from_pages(buf, pages, res.acl_data_offset,[m
+[31m -				res.acl_len);[m
+[32m +		if (localpage)[m
+[32m +			memcpy(buf, resp_buf, res.acl_len);[m
+  	}[m
+[31m -	ret = acl_len;[m
+[32m +	ret = res.acl_len;[m
+  out_free:[m
+[31m -	for (i = 0; i < npages; i++)[m
+[31m -		if (pages[i])[m
+[31m -			__free_page(pages[i]);[m
+[31m -	if (res.acl_scratch)[m
+[31m -		__free_page(res.acl_scratch);[m
+[32m +	if (localpage)[m
+[32m +		__free_page(localpage);[m
+  	return ret;[m
+  }[m
+  [m
