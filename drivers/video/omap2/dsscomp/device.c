@@ -602,7 +602,6 @@ static void __exit dsscomp_exit(void)
 }
 
 #define DUMP_CHUNK 256
-static char dump_buf[64 * 1024];
 void dsscomp_kdump(void)
 {
 	#ifdef CONFIG_DSSCOMP_DEBUG_LOG
