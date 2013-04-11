@@ -9525,9 +9525,6 @@ static void *wl_read_prof(struct wl_priv *wl, struct net_device *ndev, s32 item)
 	case WL_PROF_BSSID:
 		rptr = profile->bssid;
 		break;
-	case WL_PROF_PENDING_BSSID:
-		rptr = profile->pending_bssid;
-		break;
 	case WL_PROF_SSID:
 		rptr = &profile->ssid;
 		break;
@@ -9566,12 +9563,6 @@ wl_update_prof(struct wl_priv *wl, struct net_device *ndev,
 			memcpy(profile->bssid, data, ETHER_ADDR_LEN);
 		else
 			memset(profile->bssid, 0, ETHER_ADDR_LEN);
-		break;
-	case WL_PROF_PENDING_BSSID:
-		if (data)
-			memcpy(profile->pending_bssid, data, ETHER_ADDR_LEN);
-		else
-			memset(profile->pending_bssid, 0, ETHER_ADDR_LEN);
 		break;
 	case WL_PROF_SEC:
 		memcpy(&profile->sec, data, sizeof(profile->sec));
