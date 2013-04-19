@@ -5,3 +5,4 @@ piggy.lzo
 piggy.lzma
 vmlinux
 vmlinux.lds
+arch/arm/boot/compressed/piggy.lz4
