@@ -8,7 +8,7 @@ clear
 PARAM=$1
 DATE_START=$(date +"%s")
 CWM_MOVE="/home/anarkia/Desktop/"
-TOOLCHAIN_LINARO="${HOME}/android/AK-linaro/4.7.3-2013.03.20130313/bin/arm-linux-gnueabihf-"
+TOOLCHAIN_LINARO="${HOME}/android/AK-linaro/4.7.3-2013.04.20130415/bin/arm-linux-gnueabihf-"
 TOOLCHAIN_GOOGLE="${HOME}/android/AK-linaro/4.6.x-google/bin/arm-eabi-"
 TOOLCHAIN_STRIP="${HOME}/android/AK-linaro/4.7.3-2013.03.20130313/bin/arm-linux-gnueabihf-strip"
 
@@ -46,7 +46,7 @@ else
   #
   # LOCAL KERNEL VERSION
   #
-  ak_ver="AK.203.SKL"; export LOCALVERSION="~"`echo $ak_ver`
+  ak_ver="AK.204.SKL"; export LOCALVERSION="~"`echo $ak_ver`
 
   debug=0
 
