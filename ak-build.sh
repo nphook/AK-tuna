@@ -8,9 +8,15 @@ clear
 PARAM=$1
 DATE_START=$(date +"%s")
 CWM_MOVE="/home/anarkia/Desktop/"
+TOOLCHAIN_STRIP="${HOME}/android/AK-linaro/4.7.3-2013.04.20130415/bin/arm-linux-gnueabihf-strip"
+
 TOOLCHAIN_LINARO="${HOME}/android/AK-linaro/4.7.3-2013.04.20130415/bin/arm-linux-gnueabihf-"
 TOOLCHAIN_GOOGLE="${HOME}/android/AK-linaro/4.6.x-google/bin/arm-eabi-"
-TOOLCHAIN_STRIP="${HOME}/android/AK-linaro/4.7.3-2013.04.20130415/bin/arm-linux-gnueabihf-strip"
+TOOLCHAIN_SABER="${HOME}/android/AK-sabermod/bin/arm-eabi-"
+
+#TOOLCHAIN_COMPILE=$TOOLCHAIN_GOOGLE;
+#TOOLCHAIN_COMPILE=$TOOLCHAIN_SABER;
+TOOLCHAIN_COMPILE=$TOOLCHAIN_LINARO;
 
 if [ "${PARAM}" == "debug" ]; then
  echo ""; echo "# AK BUILD DEBUG ------------------------------------------------------------------------------------------------"; echo ""
@@ -21,8 +27,7 @@ if [ "${PARAM}" == "debug" ]; then
    echo ""
   rm -rfv .config; rm -rfv .config.old
    echo ""
-  make CROSS_COMPILE=$TOOLCHAIN_GOOGLE ARCH=arm tuna_ak_debug_defconfig
-  #make CROSS_COMPILE=$TOOLCHAIN_LINARO ARCH=arm tuna_ak_debug_defconfig
+  make CROSS_COMPILE=$TOOLCHAIN_COMPILE ARCH=arm tuna_ak_debug_defconfig
 
   #
   # LOCAL KERNEL VERSION
@@ -40,8 +45,7 @@ else
    echo ""
   rm -rfv .config; rm -rfv .config.old
    echo ""
-  #make CROSS_COMPILE=$TOOLCHAIN_GOOGLE ARCH=arm tuna_ak_defconfig
-  make CROSS_COMPILE=$TOOLCHAIN_LINARO ARCH=arm tuna_ak_defconfig
+  make CROSS_COMPILE=$TOOLCHAIN_COMPILE ARCH=arm tuna_ak_defconfig
 
   #
   # LOCAL KERNEL VERSION
@@ -55,8 +59,7 @@ fi
 #
 # CROSS COMPILE KERNEL MODULES
 #
-#make CROSS_COMPILE=$TOOLCHAIN_GOOGLE ARCH=arm -j4 modules
-make CROSS_COMPILE=$TOOLCHAIN_LINARO ARCH=arm -j4 modules
+make CROSS_COMPILE=$TOOLCHAIN_COMPILE ARCH=arm -j4 modules
 
 #
 # FIND .KO MODULE CREATE WITH CROSS COMPILE
@@ -71,8 +74,7 @@ echo ""
 #
 # CROSS COMPILE KERNEL WITH TOOLCHAIN
 #
-#make CROSS_COMPILE=$TOOLCHAIN_GOOGLE ARCH=arm -j4 zImage
-make CROSS_COMPILE=$TOOLCHAIN_LINARO ARCH=arm -j4 zImage
+make CROSS_COMPILE=$TOOLCHAIN_COMPILE ARCH=arm -j4 zImage
 
 #
 # COPY ZIMAGE OF KERNEL
