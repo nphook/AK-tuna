@@ -364,7 +364,7 @@ CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 # AK LINARO OPT
 #
 CFLAGS_A7       = -pipe -marm -mfloat-abi=softfp -mcpu=cortex-a9
-CFLAGS_GRAPHITE = -funswitch-loops -fpredictive-commoning -fgcse-after-reload \
+#CFLAGS_GRAPHITE = -funswitch-loops -fpredictive-commoning -fgcse-after-reload \
 		  -ftree-vectorize -floop-interchange -floop-strip-mine -floop-block
 CFLAGS_MODULO   = -fmodulo-sched -fmodulo-sched-allow-regmoves
 
