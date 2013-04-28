@@ -101,7 +101,7 @@ CONFIG_RQ_STATS=y
 #
 # Boot logo and Framebuffer
 #
-CONFIG_CMDLINE="console=ttyS0,115200 androidboot.console=ttyS0 fbcon=rotate:0 mem=1G vmalloc=768M omap_wdt.timer_margin=30 no_console_suspend"
+CONFIG_CMDLINE="console=ttyS0,115200 androidboot.console=ttyS0 fbcon=rotate:0 mem=1G vmalloc=256M omap_wdt.timer_margin=30 no_console_suspend"
 CONFIG_BOOT_PRINTK_DELAY=y
 CONFIG_CMDLINE_FORCE=y
 CONFIG_CMDLINE_EXTEND=y
