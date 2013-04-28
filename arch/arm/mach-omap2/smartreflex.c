@@ -37,12 +37,6 @@
 #define SR_DISABLE_TIMEOUT	200
 
 struct omap_sr {
-	struct list_head		node;
-	struct platform_device		*pdev;
-	struct omap_sr_nvalue_table	*nvalue_table;
-	struct voltagedomain		*voltdm;
-	struct dentry			*dbg_dir;
-	unsigned int			irq;
 	int				srid;
 	int				ip_type;
 	int				nvalue_count;
@@ -56,10 +50,16 @@ struct omap_sr {
 	u32				senp_avgweight;
 	u32				senp_mod;
 	u32				senn_mod;
+	unsigned int			irq;
 	bool				irq_enabled;
 	void __iomem			*base;
+	struct platform_device		*pdev;
+	struct list_head		node;
+	struct omap_sr_nvalue_table	*nvalue_table;
+	struct voltagedomain		*voltdm;
 	/* Managed by class driver as needed */
 	void				*voltdm_cdata;
+	struct dentry			*dbg_dir;
 };
 
 /* sr_list contains all the instances of smartreflex module */
@@ -72,6 +72,7 @@ static struct dentry		*sr_dbg_dir;
 static u32 mpumin = OMAP4_VP_MPU_VLIMITTO_VDDMIN;
 static u32 ivamin = OMAP4_VP_IVA_VLIMITTO_VDDMIN;
 static u32 coremin = OMAP4_VP_CORE_VLIMITTO_VDDMIN;
+bool enable_highvolt_sr = 0;
 
 #define LOWFLOOR 700000
 #define LOWCEILING 1000000
@@ -271,7 +272,6 @@ static void sr_set_clk_length(struct omap_sr *sr)
 			__func__);
 		return;
 	}
-
 	sys_clk_speed = clk_get_rate(sys_ck);
 	clk_put(sys_ck);
 
@@ -421,7 +421,6 @@ error:
 		"not function as desired\n", __func__);
 	kfree(name);
 	kfree(sr_info);
-
 	return ret;
 }
 
@@ -1092,9 +1091,22 @@ void omap_sr_register_pmic(struct omap_sr_pmic_data *pmic_data)
  * Debug FS Entries for tune smartreflex.
  * author: imoseyon@gmail.com
  */
+static int omap_sr_highvolt_show(void *data, u64 *val)
+{
+	struct omap_sr *sr_info = (struct omap_sr *) data;
+
+	if (!sr_info) {
+		pr_warning("%s: omap_sr struct not found\n", __func__);
+		return -EINVAL;
+	}
+
+	*val = enable_highvolt_sr;
+
+	return 0;
+}
 static int omap_sr_vmin_show(void *data, u64 *val)
 {
-	struct omap_sr *sr = (struct omap_sr *) data;
+        struct omap_sr *sr = (struct omap_sr *) data;
 
 	if (!sr) {
 		pr_warning("%s: omap_sr struct not found\n", __func__);
@@ -1104,6 +1116,28 @@ static int omap_sr_vmin_show(void *data, u64 *val)
         if (!(strcmp(sr->voltdm->name, "mpu"))) *val = mpumin;
         else if (!(strcmp(sr->voltdm->name, "iva"))) *val = ivamin;
         else if (!(strcmp(sr->voltdm->name, "core"))) *val = coremin;
+	return 0;
+}
+static int omap_sr_highvolt_store(void *data, u64 val)
+{
+	struct omap_sr *sr_info = (struct omap_sr *) data;
+
+	if (!sr_info) {
+		pr_warning("%s: omap_sr struct not found\n", __func__);
+		return -EINVAL;
+	}
+	/* Sanity check */
+	if (val && (val != 1)) {
+		pr_warning("%s: Invalid argument %lld\n", __func__, val);
+		return -EINVAL;
+	}
+
+	/* control enable/disable only if there is a delta in value */
+	if (enable_highvolt_sr != val) {
+		enable_highvolt_sr = val;
+		sr_stop_vddautocomp(sr_info);
+		sr_start_vddautocomp(sr_info);
+	}
 	return 0;
 }
 
@@ -1214,9 +1248,11 @@ static int omap_sr_autocomp_store(void *data, u64 val)
 }
 
 DEFINE_SIMPLE_ATTRIBUTE(pm_sr_fops, omap_sr_autocomp_show,
-			omap_sr_autocomp_store, "%llu\n");
+		omap_sr_autocomp_store, "%llu\n");
 DEFINE_SIMPLE_ATTRIBUTE(pm_sr_fops2, omap_sr_vmin_show,
 		omap_sr_vmin_store, "%llu\n");
+DEFINE_SIMPLE_ATTRIBUTE(pm_sr_fops3, omap_sr_highvolt_show,
+		omap_sr_highvolt_store, "%llu\n");
 
 static int __init omap_sr_probe(struct platform_device *pdev)
 {
@@ -1330,6 +1366,8 @@ static int __init omap_sr_probe(struct platform_device *pdev)
 			sr_info->dbg_dir, (void *)sr_info, &pm_sr_fops);
 	(void) debugfs_create_file("vmin", S_IRUGO | S_IWUSR,
 			sr_info->dbg_dir, (void *)sr_info, &pm_sr_fops2);
+	(void) debugfs_create_file("enable_highvolt", S_IRUGO | S_IWUSR,
+			sr_info->dbg_dir, (void *)sr_info, &pm_sr_fops3);
 	(void) debugfs_create_x32("errweight", S_IRUGO, sr_info->dbg_dir,
 			&sr_info->err_weight);
 	(void) debugfs_create_x32("errmaxlimit", S_IRUGO, sr_info->dbg_dir,
@@ -1466,12 +1504,12 @@ static int __init sr_init(void)
 
 	return 0;
 }
-late_initcall(sr_init);
 
 static void __exit sr_exit(void)
 {
 	platform_driver_unregister(&smartreflex_driver);
 }
+late_initcall(sr_init);
 module_exit(sr_exit);
 
 MODULE_DESCRIPTION("OMAP Smartreflex Driver");
