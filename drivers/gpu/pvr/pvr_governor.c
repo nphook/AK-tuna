@@ -16,6 +16,7 @@
  *
  */
 
+#include <linux/cpufreq.h>
 #include <linux/module.h>
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
@@ -24,15 +25,8 @@
 
 static uint sgxGovType = 1;	/* 2 - "powersave", 1 - "ondemand", 0 - "performance" */
 static uint sgxBusyCount = 0;
-static uint sgxCurrFrequency = 0;
-
 static long unsigned sgxGovernorStats[SGX_SPEED_STEPS] =
 	{0, 0, 0};
-
-void PVRSimpleGovFreqUpdate(uint newFreq)
-{
-	sgxCurrFrequency = newFreq;
-}
 
 uint PVRSimpleGovernor(bool enabled)
 {
@@ -51,19 +45,23 @@ uint PVRSimpleGovernor(bool enabled)
 
 	switch (sgxGovType) {
 		case 1:
-			/* don't count if too busy */
-			if (sgxBusyCount < 20)
-				sgxBusyCount++;
+			if (oc_val != 0) {
+				/* don't count if too busy */
+				if (sgxBusyCount < 20)
+					sgxBusyCount++;
 
-			// faux123 debug
-			//pr_info("PVR Busy Count: %u\n", sgxBusyCount);
+				// faux123 debug
+				//pr_info("PVR Busy Count: %u\n", sgxBusyCount);
 
-			if (sgxBusyCount <= SGX_SPEED_THRESHOLD) {
-				index = SGX_SPEED_TURBO;
-				//pr_info("PVR Turbo Activated!\n");
-				sgxGovernorStats[SGX_SPEED_TURBO]++;
-			}
-			else {
+				if (sgxBusyCount <= SGX_SPEED_THRESHOLD) {
+					index = SGX_SPEED_TURBO;
+					//pr_info("PVR Turbo Activated!\n");
+					sgxGovernorStats[SGX_SPEED_TURBO]++;
+				} else {
+					index = SGX_SPEED_NOMINAL;
+					sgxGovernorStats[SGX_SPEED_NOMINAL]++;
+				}
+			} else {
 				index = SGX_SPEED_NOMINAL;
 				sgxGovernorStats[SGX_SPEED_NOMINAL]++;
 			}
@@ -74,8 +72,13 @@ uint PVRSimpleGovernor(bool enabled)
 			break;
 		case 0:
 		default:
-			index = SGX_SPEED_TURBO;
-			sgxGovernorStats[SGX_SPEED_TURBO]++;
+			if (oc_val != 0) {
+				index = SGX_SPEED_TURBO;
+				sgxGovernorStats[SGX_SPEED_TURBO]++;
+			} else {
+				index = SGX_SPEED_NOMINAL;
+				sgxGovernorStats[SGX_SPEED_NOMINAL]++;
+			}
 			break;
 	}
 
@@ -146,11 +149,6 @@ static ssize_t pvr_simple_gov_version_show(struct kobject *kobj, struct kobj_att
 	return sprintf(buf, "version: %u\n", PVR_GOVERNOR_VERSION);
 }
 
-static ssize_t pvr_simple_gov_freq_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	return sprintf(buf, "%u\n", sgxCurrFrequency);
-}
-
 static struct kobj_attribute pvr_simple_governor_attribute =
 	__ATTR(simple_governor, 0666, pvr_simple_governor_show, pvr_simple_governor_store);
 
@@ -160,15 +158,11 @@ static struct kobj_attribute pvr_simple_gov_stats_attribute =
 static struct kobj_attribute pvr_simple_gov_version_attribute =
 	__ATTR(simple_gov_version, 0444 , pvr_simple_gov_version_show, NULL);
 
-static struct kobj_attribute pvr_simple_gov_freq_attribute =
-	__ATTR(simple_gov_currfreq, 0444 , pvr_simple_gov_freq_show, NULL);
-
 static struct attribute *pvr_simple_gov_attrs[] =
 	{
 		&pvr_simple_governor_attribute.attr,
 		&pvr_simple_gov_stats_attribute.attr,
 		&pvr_simple_gov_version_attribute.attr,
-		&pvr_simple_gov_freq_attribute.attr,
 		NULL,
 	};
 

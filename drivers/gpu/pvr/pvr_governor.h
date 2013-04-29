@@ -30,4 +30,3 @@
 
 uint PVRSimpleGovernor(bool enabled);
 
-void PVRSimpleGovFreqUpdate(uint newFreq);
